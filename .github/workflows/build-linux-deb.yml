@@ -1,0 +1,88 @@
+name: Build Linux .deb packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }} package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            arch: amd64
+          - runner: ubuntu-22.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build and verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils \
+            coreutils \
+            dpkg-dev \
+            lintian \
+            xvfb
+          test "$(dpkg --print-architecture)" = "${{ matrix.arch }}"
+
+      - name: Install Python build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            pyinstaller \
+            dearpygui \
+            psutil \
+            duckdb \
+            pillow \
+            gputil
+
+      - name: Build package
+        run: bash linux/build_deb.sh ${{ matrix.arch }}
+
+      - name: Verify package metadata
+        run: |
+          DEB="linux/spanda_3.0_${{ matrix.arch }}.deb"
+          test -s "$DEB"
+          dpkg-deb --info "$DEB"
+          dpkg-deb --contents "$DEB"
+          test "$(dpkg-deb -f "$DEB" Package)" = "spanda"
+          test "$(dpkg-deb -f "$DEB" Version)" = "3.0"
+          test "$(dpkg-deb -f "$DEB" Architecture)" = "${{ matrix.arch }}"
+          dpkg-deb --contents "$DEB" | grep -q './usr/bin/spanda'
+          dpkg-deb --contents "$DEB" | grep -q './usr/lib/spanda/spanda'
+          dpkg-deb --contents "$DEB" | grep -q './usr/share/applications/spanda.desktop'
+          dpkg-deb --contents "$DEB" | grep -q './usr/share/pixmaps/spanda.png'
+          lintian "$DEB" || true
+
+      - name: Install and smoke test
+        run: |
+          sudo apt-get install -y ./linux/spanda_3.0_${{ matrix.arch }}.deb
+          for tab in tab_overview tab_processes tab_specs; do
+            SPANDA_SMOKE=30 \
+            SPANDA_TAB="$tab" \
+            SPANDA_SIZE=1180x680 \
+              xvfb-run -a --server-args="-screen 0 1280x800x24" spanda
+          done
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: spanda-3.0-${{ matrix.arch }}
+          path: |
+            linux/spanda_3.0_${{ matrix.arch }}.deb
+            linux/spanda_3.0_${{ matrix.arch }}_portable.tar.gz
+          if-no-files-found: error
