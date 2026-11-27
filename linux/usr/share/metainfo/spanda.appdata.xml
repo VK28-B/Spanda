@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>spanda.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Proprietary</project_license>
+  <name>Spanda</name>
+  <summary>Live system health, process and hardware dashboard</summary>
+  <description>
+    <p>
+      Spanda shows live CPU, memory, disk, network and GPU activity, grouped
+      process rows with summed resource usage, and a detailed seven-section
+      hardware Specs view.
+    </p>
+  </description>
+  <launchable type="desktop-id">spanda.desktop</launchable>
+  <provides>
+    <binary>spanda</binary>
+  </provides>
+</component>

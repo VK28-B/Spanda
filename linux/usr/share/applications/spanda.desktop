@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Spanda
+GenericName=System Health Dashboard
+Comment=Live system health, process and hardware dashboard
+Exec=spanda
+Icon=spanda
+Terminal=false
+Categories=System;Monitor;Utility;
+Keywords=system;monitor;performance;processes;hardware;
+StartupNotify=true
